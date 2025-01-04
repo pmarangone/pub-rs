@@ -9,4 +9,10 @@ pub struct OKResponse {
 #[serde(untagged)]
 pub enum Response {
     Default(f32),
+    Error(ErrorResponse),
+}
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub error_message: String,
 }

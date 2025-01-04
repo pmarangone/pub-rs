@@ -2,21 +2,18 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::routing::post;
-use axum::{body::Bytes, routing::get, Router};
+use axum::{body::Bytes, routing::post, Router};
 use tokio::sync::Mutex;
 use tower_http::trace::TraceLayer;
 
 use tracing::Span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use lapin::{
-    options::*, publisher_confirm::Confirmation, types::FieldTable, BasicProperties, Channel,
-    Connection, ConnectionProperties, Consumer, Result,
-};
+use anyhow::Result;
 
 mod error_handling;
 mod incoming;
+mod models;
 mod publisher;
 mod responses;
 
@@ -24,7 +21,7 @@ use incoming::incoming;
 use publisher::connect_to_rabbitmq;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -39,10 +36,8 @@ async fn main() {
 
     let publisher_channel = conn.create_channel().await?;
 
-    let balances: Arc<Mutex<HashMap<String, f32>>> = Arc::new(Mutex::new(HashMap::new()));
-
     let app = Router::new()
-        .route("/incoming", get(incoming))
+        .route("/incoming", post(incoming))
         .with_state(publisher_channel)
         .layer(TraceLayer::new_for_http().on_body_chunk(
             |chunk: &Bytes, _latency: Duration, _span: &Span| {
@@ -55,4 +50,6 @@ async fn main() {
         .unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
+
+    Ok(())
 }

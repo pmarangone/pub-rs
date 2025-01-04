@@ -34,7 +34,7 @@ pub async fn publish_messages(
 ) -> Result<(), PublishError> {
     let payload_bytes = serde_json::to_vec(&payload)?;
 
-    for _ in 0..20000 {
+    for _ in 0..20 {
         let confirm = channel
             .basic_publish(
                 "",

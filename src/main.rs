@@ -12,13 +12,13 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use anyhow::Result;
 
 mod error_handling;
-mod incoming;
 mod models;
 mod publisher;
 mod responses;
+mod routes;
 
-use incoming::incoming;
 use publisher::connect_to_rabbitmq;
+use routes::incoming;
 
 #[tokio::main]
 async fn main() -> Result<()> {

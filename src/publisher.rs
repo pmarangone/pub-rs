@@ -34,7 +34,7 @@ pub async fn publish_messages(
 ) -> Result<(), PublishError> {
     let payload_bytes = serde_json::to_vec(&payload)?;
 
-    for _ in 0..20 {
+    for _ in 0..2 {
         let confirm = channel
             .basic_publish(
                 "",
@@ -55,7 +55,7 @@ pub async fn publish_messages(
             }
             Nack => {
                 tracing::debug!(
-                    "Message published: {}",
+                    "Message wasn't published: {}",
                     std::str::from_utf8(&payload_bytes).unwrap()
                 );
             }

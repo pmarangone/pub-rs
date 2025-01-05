@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{body::Bytes, routing::post, Router};
+use models::params::GeneralParams;
 use tokio::sync::Mutex;
 use tower_http::trace::TraceLayer;
 
@@ -36,20 +37,35 @@ async fn main() -> Result<()> {
 
     let publisher_channel = conn.create_channel().await?;
 
-    let app = Router::new()
-        .route("/incoming", post(incoming))
-        .with_state(publisher_channel)
-        .layer(TraceLayer::new_for_http().on_body_chunk(
-            |chunk: &Bytes, _latency: Duration, _span: &Span| {
-                tracing::debug!("streaming {} bytes", chunk.len());
-            },
-        ));
+    // let payload = GeneralParams {
+    //     name: Some("Patrick".to_string()),
+    //     surname: Some("Patrick".to_string()),
+    //     description: Some("Patrick".to_string()),
+    //     age: Some(10f32),
+    // };
+    let payload = GeneralParams {
+        name: "Patrick".to_string(),
+        surname: "Patrick".to_string(),
+        description: "Patrick".to_string(),
+        age: 10f32,
+    };
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
-    tracing::debug!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+    let result = publisher::publish_messages(publisher_channel, "hello", payload).await;
+
+    // let app = Router::new()
+    //     .route("/incoming", post(incoming))
+    //     .with_state(publisher_channel)
+    //     .layer(TraceLayer::new_for_http().on_body_chunk(
+    //         |chunk: &Bytes, _latency: Duration, _span: &Span| {
+    //             tracing::debug!("streaming {} bytes", chunk.len());
+    //         },
+    //     ));
+
+    // let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+    //     .await
+    //     .unwrap();
+    // tracing::debug!("listening on {}", listener.local_addr().unwrap());
+    // axum::serve(listener, app).await.unwrap();
 
     Ok(())
 }

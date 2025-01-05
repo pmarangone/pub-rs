@@ -1,34 +1,30 @@
 use anyhow::Error;
-use axum::Json;
-use tokio_postgres::{Client, NoTls};
+use axum::{extract::State, Json};
+use deadpool_postgres::{Client, Config, ManagerConfig, Pool, RecyclingMethod, Runtime::Tokio1};
+use tokio_postgres::NoTls;
+
 use tracing::info;
 
-use crate::models::params::User;
+use crate::{models::params::User, responses::UsersModel};
 
-// pub async fn create_connection() -> Result<(tokio_postgres::Client, tokio_postgres::Connection<>, Error> {
-//     let (client, connection) = tokio_postgres::connect(
-//         "host=localhost port=5432 dbname=database user=user password=password",
-//         NoTls,
-//     )
-//     .await?;
-//     // Ok(client, connection)
-// }
+pub async fn create_connection_pool() -> Result<Pool, Error> {
+    let mut cfg = Config::new();
+    cfg.host = Some("localhost".to_string()); // Replace with your database host
+    cfg.dbname = Some("database".to_string());
+    cfg.user = Some("user".to_string());
+    cfg.password = Some("password".to_string());
+    cfg.port = Some(5432);
 
-pub async fn query_all() -> Result<Vec<User>, Error> {
-    let (client, connection) = tokio_postgres::connect(
-        "host=localhost port=5432 dbname=database user=user password=password",
-        NoTls,
-    )
-    .await?;
-
-    // The connection object performs the actual communication with the database,
-    // so spawn it off to run on its own.
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
+    cfg.manager = Some(ManagerConfig {
+        recycling_method: RecyclingMethod::Fast,
     });
 
+    let pool = cfg.create_pool(Some(Tokio1), NoTls)?;
+    info!("Pool connection succeeded!");
+    Ok(pool)
+}
+
+pub async fn query_all(client: Client) -> Result<UsersModel, Error> {
     let mut users: Vec<User> = vec![];
 
     for row in client
@@ -55,5 +51,8 @@ pub async fn query_all() -> Result<Vec<User>, Error> {
     }
 
     // Ok(Json(users))
-    Ok(users)
+    Ok(UsersModel {
+        count: users.len() as i32,
+        users,
+    })
 }

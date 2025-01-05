@@ -7,6 +7,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use db::primary_op::create_connection_pool;
+use deadpool_postgres::Pool;
+use lapin::Channel;
 // use db::primary_op::create_connection;
 use models::params::User;
 use tokio::sync::Mutex;
@@ -27,6 +30,12 @@ mod routes;
 use publisher::connect_to_rabbitmq;
 use routes::{get_data, incoming};
 
+#[derive(Clone)]
+struct AppState {
+    publisher_channel: Channel,
+    pool: Pool,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::registry()
@@ -37,16 +46,7 @@ async fn main() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // let mut client = create_connection();
-    // match client {
-    //     Ok(mut client) => {
-
-    //     }
-    //     Err(err) => {
-    //         error!("Application initialization failed: {}", err);
-    //         std::process::exit(1);
-    //     }
-    // }
+    let pool = create_connection_pool().await?;
 
     let addr = std::env::var("AMQP_ADDR").unwrap_or_else(|_| "amqp://127.0.0.1:5672/%2f".into());
 
@@ -63,10 +63,15 @@ async fn main() -> Result<()> {
 
     // let result = publisher::publish_messages(publisher_channel, "hello", payload).await;
 
+    let state = Arc::new(AppState {
+        publisher_channel,
+        pool,
+    });
+
     let app = Router::new()
         .route("/incoming", post(incoming))
         .route("/data", get(get_data))
-        .with_state(publisher_channel)
+        .with_state(state)
         .layer(TraceLayer::new_for_http().on_body_chunk(
             |chunk: &Bytes, _latency: Duration, _span: &Span| {
                 tracing::debug!("streaming {} bytes", chunk.len());

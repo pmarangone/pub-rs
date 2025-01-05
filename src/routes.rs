@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use deadpool_postgres::Pool;
 use lapin::Channel;
-use serde::Deserialize;
 use tracing::{error, info};
 
 use crate::{
@@ -9,13 +11,14 @@ use crate::{
     models::params::User,
     publisher::publish_messages,
     responses::{ErrorResponse, Response},
+    AppState,
 };
 
 pub async fn incoming(
-    State(_publisher_channel): State<Channel>,
+    State(state): State<Arc<AppState>>,
     Json(_payload): Json<User>,
 ) -> impl IntoResponse {
-    match publish_messages(_publisher_channel, "hello", _payload).await {
+    match publish_messages(&state.publisher_channel, "hello", _payload).await {
         Result::Ok(_) => CustomResponse {
             status: StatusCode::OK,
             body: Response::Default(0f32),
@@ -29,8 +32,13 @@ pub async fn incoming(
     }
 }
 
-pub async fn get_data() -> impl IntoResponse {
-    match query_all().await {
+pub async fn get_data(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let client = state
+        .pool
+        .get()
+        .await
+        .expect("Failed to get client from pool");
+    match query_all(client).await {
         Ok(users) => CustomResponse {
             status: StatusCode::OK,
             body: Response::Users(users),

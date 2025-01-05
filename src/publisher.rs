@@ -28,7 +28,7 @@ pub enum PublishError {
 
 /// Publish messages to the given queue in a loop.
 pub async fn publish_messages(
-    channel: Channel,
+    channel: &Channel,
     queue_name: &str,
     payload: User,
 ) -> Result<(), PublishError> {

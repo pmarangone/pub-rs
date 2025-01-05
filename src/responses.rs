@@ -8,11 +8,17 @@ pub struct OKResponse {
 }
 
 #[derive(Serialize)]
+pub struct UsersModel {
+    pub count: i32,
+    pub users: Vec<User>,
+}
+
+#[derive(Serialize)]
 #[serde(untagged)]
 pub enum Response {
     Default(f32),
     Error(ErrorResponse),
-    Users(Vec<User>),
+    Users(UsersModel),
 }
 
 #[derive(Serialize)]

@@ -2,9 +2,9 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct GeneralParams {
+pub struct User {
     pub name: String,
     pub surname: String,
     pub description: String,
-    pub age: f32,
+    pub age: i32,
 }

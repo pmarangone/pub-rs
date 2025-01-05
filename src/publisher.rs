@@ -8,7 +8,7 @@ use lapin::{
 use lapin::Error as LapinError;
 use serde_json::Error as SerdeJsonError;
 
-use crate::models::params::GeneralParams;
+use crate::models::params::User;
 
 pub async fn connect_to_rabbitmq(addr: &str) -> lapin::Result<Connection> {
     let conn = Connection::connect(addr, ConnectionProperties::default()).await?;
@@ -30,7 +30,7 @@ pub enum PublishError {
 pub async fn publish_messages(
     channel: Channel,
     queue_name: &str,
-    payload: GeneralParams,
+    payload: User,
 ) -> Result<(), PublishError> {
     let payload_bytes = serde_json::to_vec(&payload)?;
 

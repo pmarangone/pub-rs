@@ -8,3 +8,14 @@ pub struct User {
     pub description: String,
     pub age: i32,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TransactionModel {
+    id: u64,
+    amount: f64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Email {
+    pub to: String,
+}

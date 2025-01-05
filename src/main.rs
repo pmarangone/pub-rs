@@ -28,7 +28,7 @@ mod responses;
 mod routes;
 
 use publisher::connect_to_rabbitmq;
-use routes::{get_data, incoming};
+use routes::{get_data, incoming, publish_task_route};
 
 #[derive(Clone)]
 struct AppState {
@@ -70,6 +70,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/incoming", post(incoming))
+        .route("/task", post(publish_task_route))
         .route("/data", get(get_data))
         .with_state(state)
         .layer(TraceLayer::new_for_http().on_body_chunk(

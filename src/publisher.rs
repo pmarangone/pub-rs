@@ -98,11 +98,11 @@ pub async fn produce_route_jobs() -> Result<(), anyhow::Error> {
     let mut storage = RedisStorage::new_with_config(conn, conf);
 
     match storage.push(TransactionModel { id: 1, amount: 10 }).await {
-        Ok(res) => {
-            info!("{:?}", res);
+        Ok(_) => {
+            info!("Job request sent successfully.");
         }
         Err(err) => {
-            error!("{:?}", err);
+            error!("Job request failed. {:?}", err);
         }
     }
 

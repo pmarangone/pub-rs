@@ -97,12 +97,7 @@ pub async fn produce_route_jobs() -> Result<(), anyhow::Error> {
     let conf = config_storage.set_namespace("email-worker");
     let mut storage = RedisStorage::new_with_config(conn, conf);
 
-    match storage
-        .push(Email {
-            to: "test@example.com".to_string(),
-        })
-        .await
-    {
+    match storage.push(TransactionModel { id: 1, amount: 10 }).await {
         Ok(res) => {
             info!("{:?}", res);
         }

@@ -11,8 +11,8 @@ pub struct User {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TransactionModel {
-    id: u64,
-    amount: f64,
+    pub id: i32,
+    pub amount: i32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -16,6 +16,7 @@ lapin = "2.5.0"
 
 apalis = "0.6.3"
 apalis-redis = { version = "0.6" }
+apalis-amqp = "0.4"
 
 tower-http = { version = "0.5.2", features = ["trace", "cors"] }
 tracing = "0.1.40"

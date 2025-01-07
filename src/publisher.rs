@@ -1,4 +1,5 @@
 use apalis::prelude::*;
+use apalis_amqp::AmqpBackend;
 use apalis_redis::{Config, RedisStorage};
 use lapin::{
     options::*, publisher_confirm::Confirmation, types::parsing::ParserErrors, BasicProperties,
@@ -28,10 +29,11 @@ pub enum PublishError {
 }
 
 /// Publish messages to the given queue in a loop.
+/// # TODO: Refactor to receive a transactionmodel
 pub async fn publish_messages(
     channel: &Channel,
     queue_name: &str,
-    payload: User,
+    payload: TransactionModel,
 ) -> Result<(), PublishError> {
     let payload_bytes = serde_json::to_vec(&payload)?;
 
@@ -98,6 +100,41 @@ pub async fn produce_route_jobs() -> Result<(), anyhow::Error> {
     let mut storage = RedisStorage::new_with_config(conn, conf);
 
     match storage.push(TransactionModel { id: 1, amount: 10 }).await {
+        Ok(_) => {
+            info!("Job request sent successfully.");
+        }
+        Err(err) => {
+            error!("Job request failed. {:?}", err);
+        }
+    }
+
+    Ok(())
+}
+//This can be in another part of the program or another application eg a http server
+pub async fn amqp_produce_route_jobs() -> Result<(), anyhow::Error> {
+    info!("Called producer!");
+
+    let amqp_addr = "amqp://127.0.0.1:5672/%2f";
+
+    let conn = connect_to_rabbitmq(&amqp_addr).await?;
+    let amqp_channel = conn.create_channel().await?;
+
+    let amqp_queue = amqp_channel
+        .queue_declare(
+            "transaction_queue",
+            lapin::options::QueueDeclareOptions::default(),
+            lapin::types::FieldTable::default(),
+        )
+        .await?;
+
+    let config_storage = apalis_amqp::utils::Config::new("transaction_queue");
+    let mut backend: AmqpBackend<TransactionModel> =
+        AmqpBackend::new_with_config(amqp_channel, amqp_queue, config_storage);
+
+    match backend
+        .enqueue(TransactionModel { id: 1, amount: 42 })
+        .await
+    {
         Ok(_) => {
             info!("Job request sent successfully.");
         }

@@ -9,16 +9,16 @@ use crate::{
     db::primary_op::query_all,
     error_handling::{empty_string_as_none, CustomResponse},
     models::params::{TransactionModel, User},
-    publisher::{produce_route_jobs, publish_messages, publish_task},
+    publisher::{amqp_produce_route_jobs, produce_route_jobs, publish_messages, publish_task},
     responses::{ErrorResponse, Response},
     AppState,
 };
 
 pub async fn incoming(
     State(state): State<Arc<AppState>>,
-    Json(_payload): Json<User>,
+    Json(_payload): Json<TransactionModel>,
 ) -> impl IntoResponse {
-    match publish_messages(&state.publisher_channel, "hello", _payload).await {
+    match publish_messages(&state.publisher_channel, "transaction_queue", _payload).await {
         Result::Ok(_) => CustomResponse {
             status: StatusCode::OK,
             body: Response::Default(0f32),
@@ -36,7 +36,7 @@ pub async fn publish_task_route(
     State(state): State<Arc<AppState>>,
     Json(_payload): Json<TransactionModel>,
 ) -> impl IntoResponse {
-    match produce_route_jobs().await {
+    match amqp_produce_route_jobs().await {
         Result::Ok(_) => CustomResponse {
             status: StatusCode::OK,
             body: Response::Default(0f32),
